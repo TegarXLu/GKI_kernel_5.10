@@ -1,58 +1,55 @@
 #!/bin/bash
 
-# Script For Building Gaming-Optimized Android Kernel with Full LTO + PGO + BOLT + MLGO
-
-DIR=$(readlink -f .)
-MAIN=$(readlink -f ${DIR}/..)
-export CLANG_PATH=$MAIN/clang-r536625/bin
-export PATH=${CLANG_PATH}:${PATH}
-
-DEFCONFIG="gki_gaming_defconfig"
-DEVICE=garnet
-THREAD="-j$(nproc --all)"
-DATE=$(TZ=Asia/Jakarta date +"%Y%m%d-%T")
-TANGGAL=$(date +"%F%S")
-ANYKERNEL3_DIR=$PWD/AnyKernel3/
-FINAL_KERNEL_ZIP=GamingWakaca-${DEVICE}-${TANGGAL}.zip
-
+# Full LTO + PGO + BOLT + MLGO optimized kernel build script
 export ARCH=arm64
-export SUBARCH=$ARCH
-export KBUILD_BUILD_USER=byben
-export KBUILD_BUILD_HOST=wkcw
+export SUBARCH=arm64
+export CLANG_PATH=$PWD/clang/bin
+export PATH=$CLANG_PATH:$PATH
+
+export KBUILD_BUILD_USER="tegarxlu"
+export KBUILD_BUILD_HOST="gki-builder"
+
+export CROSS_COMPILE=aarch64-linux-gnu-
 export CLANG_TRIPLE=aarch64-linux-gnu-
-export CROSS_COMPILE=$MAIN/clang-r536625/bin/aarch64-linux-gnu-
 export CC=clang
 export CXX=clang++
+export LD=ld.lld
+export AR=llvm-ar
+export NM=llvm-nm
+export OBJCOPY=llvm-objcopy
+export OBJDUMP=llvm-objdump
+export STRIP=llvm-strip
+export HOSTCC=clang
+export HOSTCXX=clang++
 
-# MLGO optimization
-export MLGO=1
+# Enable MLGO & other optimizations
+export LLVM=1
+export LLVM_IAS=1
+export LTO=full
+export CONFIG_LTO_CLANG_FULL=y
+export CONFIG_PGO_CLANG=y
+export CONFIG_BOLT_CLANG=y
+export CONFIG_MLGO_CLANG=y
+export CONFIG_LLD_PGO_USE=y
+export CONFIG_KERNEL_LD=lld
 
-# Clean
-mkdir -p out
-make O=out clean
+DEFCONFIG="arch/arm64/configs/gki_defconfig"
+OUTDIR="out"
+ANYKERNEL_DIR="../AnyKernel3"
+FINAL_ZIP="TegarXLu-Gaming-Kernel.zip"
 
-# Configure for gaming defconfig
-make O=out $DEFCONFIG LLVM=1 LLVM_IAS=1
+# Prepare output directory
+rm -rf ${OUTDIR}
+mkdir -p ${OUTDIR}
 
-# Full LTO + PGO + BOLT + MLGO Build
-make O=out $THREAD \
-    CC=ccache clang CXX=ccache clang++ \
-    LLVM=1 LLVM_IAS=1 \
-    CONFIG_LTO_CLANG=y CONFIG_LTO_CLANG_FULL=y CONFIG_LTO_CLANG_THIN=n \
-    CONFIG_PGO_CLANG=y CONFIG_BOLT_CLANG=y CONFIG_MLGO_CLANG=y \
-    CONFIG_LLD_PGO_USE=y CONFIG_KERNEL_LD=lld \
-    2>&1 | tee kernel.log
+# Setup defconfig and build
+make O=${OUTDIR} ${DEFCONFIG}
+make -j$(nproc) O=${OUTDIR}     ARCH=arm64 LLVM=1 LLVM_IAS=1 LTO=full
 
-# Package
-ls out/arch/arm64/boot/Image.gz
-
-cd $ANYKERNEL3_DIR
-rm -f Image.gz dtbo.img dtb.img $FINAL_KERNEL_ZIP
-cp $PWD/out/arch/arm64/boot/Image.gz ./
-zip -r9 "../$FINAL_KERNEL_ZIP" * -x README $FINAL_KERNEL_ZIP
+# Package with AnyKernel3
+cp ${OUTDIR}/arch/arm64/boot/Image.gz ${ANYKERNEL_DIR}/
+cd ${ANYKERNEL_DIR}
+zip -r9 "../${FINAL_ZIP}" ./*
 cd ..
-rm -rf out kernel.log
 
-sha1sum $FINAL_KERNEL_ZIP
-
-echo "Build completed in $(($(date +"%s") - BUILD_START)) seconds."
+echo "✅ Kernel build complete: ${FINAL_ZIP}"
