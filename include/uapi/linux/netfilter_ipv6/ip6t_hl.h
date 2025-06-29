@@ -9,11 +9,15 @@
 #include <linux/types.h>
 
 enum {
-	IP6T_HL_EQ = 0,		/* equals */
-	IP6T_HL_NE,		/* not equals */
-	IP6T_HL_LT,		/* less than */
-	IP6T_HL_GT,		/* greater than */
+    IP6T_HL_EQ = 0,     /* equals */
+    IP6T_HL_NE,         /* not equals */
+    IP6T_HL_LT,         /* less than */
+    IP6T_HL_GT,         /* greater than */
 };
 
+struct ip6t_HL_info {
+    __u8 mode;
+    __u8 hop_limit;
+};
 
-struct ip6t_h
+#endif /* _IP6T_HL_H */
