@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # Full LTO + PGO + BOLT + MLGO optimized kernel build script
+# Hanya membangun Image.gz, skip DTB & headers_install
+
 export ARCH=arm64
 export SUBARCH=arm64
 export CLANG_PATH=$PWD/clang/bin
@@ -42,9 +44,14 @@ FINAL_ZIP="TegarXLu-Gaming-Kernel.zip"
 rm -rf ${OUTDIR}
 mkdir -p ${OUTDIR}
 
-# Setup defconfig and build
-make O=${OUTDIR} ${DEFCONFIG}
-make -j$(nproc) O=${OUTDIR}     ARCH=arm64 LLVM=1 LLVM_IAS=1 LTO=full
+# Configure
+make O=${OUTDIR} ${DEFCONFIG} \
+     ARCH=arm64 LLVM=1 LLVM_IAS=1 LTO=full
+
+# Build only the Image.gz (skip DTB & headers)
+make -j$(nproc) O=${OUTDIR} \
+     ARCH=arm64 LLVM=1 LLVM_IAS=1 LTO=full \
+     Image.gz
 
 # Package with AnyKernel3
 cp ${OUTDIR}/arch/arm64/boot/Image.gz ${ANYKERNEL_DIR}/
