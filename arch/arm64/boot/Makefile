@@ -43,3 +43,6 @@ install:
 zinstall:
 	$(CONFIG_SHELL) $(srctree)/$(src)/install.sh $(KERNELRELEASE) \
 	$(obj)/Image.gz System.map "$(INSTALL_PATH)"
+
+
+# NOTE: DTBs for Allwinner are skipped in arch/arm64/boot/dts/Makefile
